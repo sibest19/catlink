@@ -217,9 +217,22 @@ wget -O - https://get.hacs.vip | DOMAIN=catlink REPO_PATH=hasscc/catlink ARCHIVE
 
 > ! Recommend sharing devices to another account, because you can keep only one login session, which means that you'll have to re-login to CATLINK each time your HA instance pulls the data.
 
-Just use ConfigFlow. Enter your phonenumber (eg. +493034994004) and password. <br>
-That's it. <br>
-It will automatically discover your Region, Cats & Devices.
+Just use ConfigFlow. It first asks how you sign in to the CatLink app:
+
+- **Email address** — enter the address and password you use in the app.
+- **Phone number** — enter it with the country code, eg. `+493034994004`. The
+  country code matters: without it the country is guessed and is usually wrong.
+
+Your Cats & Devices are then discovered automatically.
+
+The **Server region** field can normally stay on *Detect automatically*, which
+tries every CatLink server until one accepts your login. If you already know
+your region, selecting it makes a wrong password cost one failed login attempt
+instead of four.
+
+> Devices shared with the account *after* setup are picked up automatically. To
+> narrow down which devices are polled, use the integration's **Configure**
+> option.
 
 ## Services (Optional)
 

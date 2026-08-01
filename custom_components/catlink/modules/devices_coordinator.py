@@ -45,7 +45,10 @@ class DevicesCoordinator(DataUpdateCoordinator):
             did = dat.get("id")
             if not did:
                 continue
-            if self._device_ids is not None and did not in self._device_ids:
+            # An empty selection means "not narrowed down" rather than "show
+            # nothing". Setup writes an empty list when the account had no
+            # devices yet — devices shared afterwards must still appear.
+            if self._device_ids and did not in self._device_ids:
                 _LOGGER.debug(
                     "Device %s (%s) skipped because it is not in configured device list",
                     dat.get("deviceName"),

@@ -13,9 +13,6 @@ from homeassistant.core import HomeAssistant
 from .const import (
     API_SERVERS,
     CONF_API_BASE,
-    CONF_PASSWORD,
-    CONF_PHONE,
-    CONF_PHONE_IAC,
     DOMAIN,
 )
 
@@ -68,25 +65,48 @@ def parse_phone_number(phone: str) -> tuple[str, str]:
 
 
 async def discover_region(
-    hass: HomeAssistant, phone_iac: str, phone_number: str, password: str
+    hass: HomeAssistant,
+    credentials: dict[str, str],
+    region: str | None = None,
 ) -> str | None:
-    """Try each API region until login succeeds. Returns region key or None."""
+    """Find the API region that accepts these credentials.
+
+    ``credentials`` identifies the account by either CONF_EMAIL or
+    CONF_PHONE/CONF_PHONE_IAC, plus CONF_PASSWORD.
+
+    When ``region`` is given, only that region is tried. Otherwise every region
+    is tried in turn — convenient, but it spends a failed login attempt against
+    each server when the credentials are simply wrong, so prefer passing the
+    region when the user knows it.
+
+    Returns the region key, or None if no region accepted the credentials.
+    """
     from .modules.account import Account
 
-    for region in ("global", "china", "usa", "singapore"):
-        api_base = API_SERVERS.get(region)
+    for name in [region] if region else list(API_SERVERS):
+        api_base = API_SERVERS.get(name)
         if not api_base:
             continue
-        config = {
-            CONF_API_BASE: api_base,
-            CONF_PHONE: phone_number,
-            CONF_PHONE_IAC: phone_iac,
-            CONF_PASSWORD: password,
-        }
-        account = Account(hass, config)
+        account = Account(hass, {CONF_API_BASE: api_base, **credentials})
         if await account.async_login():
-            return region
+            return name
     return None
+
+
+def as_int(value: object, default: int | None = None) -> int | None:
+    """Coerce an API value to an int, falling back to ``default``.
+
+    CatLink sends JSON null for fields a device does not report, and that null
+    survives ``dict.get(key, fallback)`` because the key is present with a null
+    value. Countdowns in particular must stay unknown rather than silently
+    becoming a misleading zero, so the default here is None.
+    """
+    if value is None or value == "":
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def format_api_error(rdt: dict) -> str:

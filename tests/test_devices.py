@@ -244,15 +244,15 @@ class TestLitterBox:
         actions = device.actions
         assert "01" in actions
         assert "00" in actions
-        assert "Cleaning" in actions.values()
-        assert "Pause" in actions.values()
+        assert "cleaning" in actions.values()
+        assert "pause" in actions.values()
 
     def test_box_full_levels(self, mock_coordinator, sample_device_data) -> None:
         """Test LitterBox box full sensitivity levels."""
         device = LitterBox(sample_device_data, mock_coordinator)
         levels = device.box_full_levels
         assert "LEVEL_01" in levels
-        assert levels["LEVEL_01"] == "Level 1"
+        assert levels["LEVEL_01"] == "level_1"
 
     def test_error_default_normal_operation(
         self, mock_coordinator, sample_device_data
@@ -292,8 +292,8 @@ class TestLitterBox:
         """Test LitterBox garbage_actions property."""
         device = LitterBox(sample_device_data, mock_coordinator)
         actions = device.garbage_actions
-        assert actions["00"] == "Change Bag"
-        assert actions["01"] == "Reset"
+        assert actions["00"] == "change_bag"
+        assert actions["01"] == "reset"
 
     def test_last_sync_with_timestamp(
         self, mock_coordinator, sample_device_data
@@ -353,7 +353,7 @@ class TestLitterBox:
         """Test LitterBox box_full_sensitivity maps level to label."""
         device = LitterBox(sample_device_data, mock_coordinator)
         device.detail = {"boxFullSensitivity": "LEVEL_01"}
-        assert device.box_full_sensitivity == "Level 1"
+        assert device.box_full_sensitivity == "level_1"
 
     def test_box_full_sensitivity_attrs(
         self, mock_coordinator, sample_device_data
@@ -446,7 +446,7 @@ class TestLitterBoxAsyncMethods:
         mock_coordinator.account.request = AsyncMock(return_value={"returnCode": 0})
         device.update_device_detail = AsyncMock(return_value={})
 
-        result = await device.select_action("Cleaning")
+        result = await device.select_action("cleaning")
 
         assert result is not False
         mock_coordinator.account.request.assert_called_once()
@@ -474,7 +474,7 @@ class TestLitterBoxAsyncMethods:
         mock_coordinator.account.request = AsyncMock(return_value={"returnCode": 0})
         device.update_device_detail = AsyncMock(return_value={})
 
-        result = await device.changeBag("Change Bag")
+        result = await device.changeBag("change_bag")
 
         assert result is not False
         mock_coordinator.account.request.assert_called_once()
@@ -489,7 +489,7 @@ class TestLitterBoxAsyncMethods:
         mock_coordinator.account.request = AsyncMock(return_value={"returnCode": 0})
         device.update_device_detail = AsyncMock(return_value={})
 
-        result = await device.select_box_full_sensitivity("Level 1")
+        result = await device.select_box_full_sensitivity("level_1")
 
         assert result is not False
         mock_coordinator.account.request.assert_called_once()
@@ -544,8 +544,8 @@ class TestLitterBoxAsyncMethods:
         buttons = device.hass_button
         assert "reset_litter" in buttons
         assert "reset_deodorant" in buttons
-        assert buttons["reset_litter"]["name"] == "Reset litter"
-        assert buttons["reset_deodorant"]["name"] == "Reset deodorant"
+        assert callable(buttons["reset_litter"]["async_press"])
+        assert callable(buttons["reset_deodorant"]["async_press"])
 
 
 class TestC08Device:
@@ -563,13 +563,13 @@ class TestC08Device:
         """Test C08Device litter type mapping."""
         device = C08Device(sample_c08_data, mock_coordinator)
         device.detail = {"litterType": "00"}
-        assert device.litter_type == "Bentonite"
+        assert device.litter_type == "bentonite"
 
     def test_safe_time(self, mock_coordinator, sample_c08_data) -> None:
         """Test C08Device safe time mapping."""
         device = C08Device(sample_c08_data, mock_coordinator)
         device.detail = {"safeTime": "5"}
-        assert device.safe_time == "5 min"
+        assert device.safe_time == "min_5"
 
     def test_notice_switch_mapping(self, mock_coordinator, sample_c08_data) -> None:
         """Test notice switches map to notice configs."""
@@ -585,7 +585,7 @@ class TestC08Device:
         device = C08Device(sample_c08_data, mock_coordinator)
         switches = device.hass_switch
         assert "notice_cat_came" in switches
-        assert switches["notice_cat_came"]["name"] == "Notice: Cat came"
+        assert callable(switches["notice_cat_came"]["async_turn_on"])
 
     def test_hass_select_structure(self, mock_coordinator, sample_c08_data) -> None:
         """Test C08Device hass_select contains expected keys."""
@@ -628,7 +628,7 @@ class TestC08DeviceAsyncMethods:
         mock_coordinator.account.request = AsyncMock(return_value={"returnCode": 0})
         device.update_device_detail = AsyncMock(return_value={})
 
-        result = await device.select_action("Clean: start")
+        result = await device.select_action("clean_start")
 
         assert result is True
         call_args = mock_coordinator.account.request.call_args
@@ -645,7 +645,7 @@ class TestC08DeviceAsyncMethods:
         mock_coordinator.account.request = AsyncMock(return_value={"returnCode": 0})
         device.update_device_detail = AsyncMock(return_value={})
 
-        result = await device.select_litter_type("Bentonite")
+        result = await device.select_litter_type("bentonite")
 
         assert result is True
         call_args = mock_coordinator.account.request.call_args
@@ -992,9 +992,9 @@ class TestPureProDevice:
         """Test PureProDevice modes."""
         device = PureProDevice(sample_purepro_data, mock_coordinator)
         modes = device.modes
-        assert modes["CONTINUOUS_SPRING"] == "Flowing mode"
-        assert modes["INTERMITTENT_SPRING"] == "Eco-mode"
-        assert modes["INDUCTION_SPRING"] == "Smart mode"
+        assert modes["CONTINUOUS_SPRING"] == "flowing"
+        assert modes["INTERMITTENT_SPRING"] == "eco"
+        assert modes["INDUCTION_SPRING"] == "smart"
 
     def test_purepro_hass_sensor(self, mock_coordinator, sample_purepro_data) -> None:
         """Test PureProDevice hass_sensor structure."""
@@ -1034,7 +1034,7 @@ class TestPureProDeviceAsyncMethods:
         mock_coordinator.account.request = AsyncMock(return_value={"returnCode": 0})
         device.update_device_detail = AsyncMock(return_value={})
 
-        result = await device.select_mode("Flowing mode")
+        result = await device.select_mode("flowing")
 
         assert result is True
         call_args = mock_coordinator.account.request.call_args
@@ -1059,3 +1059,16 @@ class TestPureProDeviceAsyncMethods:
         mock_coordinator.account.request.assert_called_once_with(
             "token/device/purepro/stats/log/top5", {"deviceId": "purepro1"}
         )
+
+
+def test_every_implemented_device_type_is_marked_supported() -> None:
+    """Test each device class is also in SUPPORTED_DEVICE_TYPES.
+
+    A type with a class but missing from the set is shown as "Limited support"
+    in the config flow and is never pre-selected (hasscc/catlink#57).
+    """
+    from custom_components.catlink.const import SUPPORTED_DEVICE_TYPES
+    from custom_components.catlink.devices.registry import DEVICE_TYPES
+
+    implemented = set(DEVICE_TYPES) - {"CAT"}  # cats are not selectable devices
+    assert implemented == set(SUPPORTED_DEVICE_TYPES)

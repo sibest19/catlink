@@ -4,7 +4,7 @@ import datetime
 from typing import TYPE_CHECKING
 
 from ..const import _LOGGER
-from ..helpers import format_api_error
+from ..helpers import as_int, format_api_error
 from ..models.additional_cfg import AdditionalDeviceConfig
 from ..models.api.device import LitterDeviceInfo
 from ..models.api.parse import parse_response
@@ -39,26 +39,26 @@ class LitterBox(LitterDevice):
     def actions(self) -> dict:
         """Return the actions."""
         return {
-            "01": "Cleaning",
-            "00": "Pause",
+            "01": "cleaning",
+            "00": "pause",
         }
 
     @property
     def garbage_actions(self) -> dict:
         """Return the garbage actions."""
         return {
-            "00": "Change Bag",
-            "01": "Reset",
+            "00": "change_bag",
+            "01": "reset",
         }
 
     @property
     def box_full_levels(self) -> dict:
         """Return the box full sensitivity levels."""
         return {
-            "LEVEL_01": "Level 1",
-            "LEVEL_02": "Level 2",
-            "LEVEL_03": "Level 3",
-            "LEVEL_04": "Level 4",
+            "LEVEL_01": "level_1",
+            "LEVEL_02": "level_2",
+            "LEVEL_03": "level_3",
+            "LEVEL_04": "level_4",
         }
 
     @property
@@ -111,9 +111,9 @@ class LitterBox(LitterDevice):
         """Return the last sync time."""
         return (
             datetime.datetime.fromtimestamp(
-                int(self.detail.get("lastHeartBeatTimestamp")) / 1000.0
+                as_int(self.detail.get("lastHeartBeatTimestamp"), 0) / 1000.0
             ).strftime("%Y-%m-%d %H:%M:%S")
-            if self.detail.get("lastHeartBeatTimestamp")
+            if as_int(self.detail.get("lastHeartBeatTimestamp"))
             else None
         )
 
@@ -226,9 +226,9 @@ class LitterBox(LitterDevice):
         return {
             **self._base_state_attrs(),
             "last_sync_time": datetime.datetime.fromtimestamp(
-                int(self.detail.get("lastHeartBeatTimestamp")) / 1000.0
+                as_int(self.detail.get("lastHeartBeatTimestamp"), 0) / 1000.0
             ).strftime("%Y-%m-%d %H:%M:%S")
-            if self.detail.get("lastHeartBeatTimestamp")
+            if as_int(self.detail.get("lastHeartBeatTimestamp"))
             else None,
             "box_full_sensitivity": self.detail.get("boxFullSensitivity"),
             "quiet_times": self.detail.get("quietTimes"),
@@ -432,7 +432,7 @@ class LitterBox(LitterDevice):
         """Change the garbage bag."""
         api = "token/litterbox/replaceGarbageBagCmd"
         pms = {
-            "enable": "1" if mode == "Change Bag" else "0",
+            "enable": "1" if mode == self.garbage_actions["00"] else "0",
             "deviceId": self.id,
         }
         rdt = await self.account.request(api, pms, "POST")
@@ -479,12 +479,10 @@ class LitterBox(LitterDevice):
         return {
             "reset_litter": {
                 "icon": "mdi:shaker-outline",
-                "name": "Reset litter",
                 "async_press": self.async_reset_litter,
             },
             "reset_deodorant": {
                 "icon": "mdi:spray-bottle",
-                "name": "Reset deodorant",
                 "async_press": self.async_reset_deodorant,
             },
         }

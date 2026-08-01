@@ -39,9 +39,9 @@ class PureProDevice(LogsMixin, Device):
     def modes(self) -> dict:
         """Return the modes of the device."""
         return {
-            "CONTINUOUS_SPRING": "Flowing mode",
-            "INTERMITTENT_SPRING": "Eco-mode",
-            "INDUCTION_SPRING": "Smart mode",
+            "CONTINUOUS_SPRING": "flowing",
+            "INTERMITTENT_SPRING": "eco",
+            "INDUCTION_SPRING": "smart",
         }
 
     @property
@@ -140,7 +140,6 @@ class PureProDevice(LogsMixin, Device):
         return {
             "uv_active": {
                 "icon": "mdi:lightbulb-cfl-spiral",
-                "name": "UV_active",
                 "state": self.detail.get("ultravioletRaysSwitch") == "OPEN",
             },
             "heating": {

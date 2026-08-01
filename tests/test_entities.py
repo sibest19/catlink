@@ -2,17 +2,32 @@
 
 from unittest.mock import AsyncMock, MagicMock
 
+from custom_components.catlink.const import DOMAIN
 from custom_components.catlink.devices.base import Device
 from custom_components.catlink.devices.litterbox import LitterBox
 from custom_components.catlink.entities.base import CatlinkEntity
 from custom_components.catlink.entities.binary import CatlinkBinarySensorEntity
 from custom_components.catlink.entities.button import CatlinkButtonEntity
+from custom_components.catlink.entities.number import CatlinkNumberEntity
 from custom_components.catlink.entities.select import CatlinkSelectEntity
 from custom_components.catlink.entities.sensor import CatlinkSensorEntity
 from custom_components.catlink.entities.switch import CatlinkSwitchEntity
 import pytest
 
 from homeassistant.const import STATE_OFF, STATE_ON
+
+
+def _attach_platform(hass, entity, domain="sensor"):
+    """Attach an entity platform, as Home Assistant does before reading state.
+
+    Without it `entity.name` cannot resolve its translation key, which is how
+    the entity behaves in production but not when constructed bare in a test.
+    """
+    from pytest_homeassistant_custom_component.common import MockEntityPlatform
+
+    platform = MockEntityPlatform(hass, domain=domain, platform_name=DOMAIN)
+    entity.add_to_platform_start(hass, platform, None)
+    return entity
 
 
 @pytest.fixture
@@ -64,12 +79,18 @@ class TestCatlinkEntity:
         entity = CatlinkEntity("error", mock_device, {"icon": "mdi:alert"})
         entity.coordinator = mock_coordinator
         entity.hass = hass
+        _attach_platform(hass, entity, "sensor")
 
         assert entity._name == "error"
         assert entity._device == mock_device
         assert entity._attr_icon == "mdi:alert"
-        assert "Test Litter Box" in entity._attr_name
-        assert "error" in entity._attr_name
+        # has_entity_name is True, so Home Assistant prepends the device name
+        # and takes the entity half from the translations via translation_key.
+        assert entity._attr_has_entity_name is True
+        assert entity._attr_translation_key == "error"
+        # _attr_name must stay unset: Entity._name_internal returns it before it
+        # ever looks at the translation, so setting it silently disables i18n.
+        assert not hasattr(entity, "_attr_name")
         assert entity._attr_device_id == "LITTER_BOX_599_AABBCCDDEEFF"
         assert entity._attr_unique_id == "LITTER_BOX_599_AABBCCDDEEFF-error"
 
@@ -276,6 +297,7 @@ class TestCatlinkSelectEntity:
         )
         entity.coordinator = mock_coordinator
         entity.hass = hass
+        _attach_platform(hass, entity, "select")
 
         result = await entity.async_select_option("manual")
         assert result is True
@@ -378,6 +400,7 @@ class TestCatlinkSwitchEntity:
         )
         entity.coordinator = mock_coordinator
         entity.hass = hass
+        _attach_platform(hass, entity, "switch")
 
         await entity.async_turn_on()
         assert entity._attr_is_on is True
@@ -396,8 +419,42 @@ class TestCatlinkSwitchEntity:
         )
         entity.coordinator = mock_coordinator
         entity.hass = hass
+        _attach_platform(hass, entity, "switch")
         entity._attr_is_on = True
 
         await entity.async_turn_off()
         assert entity._attr_is_on is False
         mock_turn_off.assert_called_once()
+
+
+class TestEntityIdDomain:
+    """Tests that entity IDs use their own platform domain, not the integration."""
+
+    @pytest.mark.parametrize(
+        ("cls", "expected_domain"),
+        [
+            (CatlinkSensorEntity, "sensor"),
+            (CatlinkBinarySensorEntity, "binary_sensor"),
+            (CatlinkSwitchEntity, "switch"),
+            (CatlinkSelectEntity, "select"),
+            (CatlinkButtonEntity, "button"),
+            (CatlinkNumberEntity, "number"),
+        ],
+    )
+    def test_entity_id_uses_platform_domain(
+        self, mock_device, mock_coordinator, cls, expected_domain
+    ) -> None:
+        """Test the entity_id domain matches the platform, not 'catlink'.
+
+        Home Assistant warns on a mismatched domain and stops accepting it in
+        2027.5.0 (hasscc/catlink#61).
+        """
+        mock_device.coordinator = mock_coordinator
+        entity = cls("state", mock_device, {})
+        assert entity.entity_id.split(".")[0] == expected_domain
+
+    def test_object_id_is_unchanged(self, mock_device, mock_coordinator) -> None:
+        """Test the object_id half is untouched, so existing IDs keep working."""
+        mock_device.coordinator = mock_coordinator
+        entity = CatlinkSensorEntity("litter_weight", mock_device, {})
+        assert entity.entity_id.split(".", 1)[1].endswith("_litter_weight")

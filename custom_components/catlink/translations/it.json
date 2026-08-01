@@ -1,0 +1,360 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Questo account è già configurato.",
+      "reauth_successful": "Riautenticazione completata."
+    },
+    "error": {
+      "cannot_connect": "Impossibile connettersi ai server CatLink. Controlla la connessione a Internet e riprova.",
+      "invalid_auth": "Autenticazione non riuscita. Controlla le credenziali e riprova."
+    },
+    "step": {
+      "user": {
+        "description": "Come accedi all'app CatLink?",
+        "menu_options": {
+          "email": "Indirizzo email",
+          "phone": "Numero di telefono"
+        },
+        "title": "Connessione a CatLink"
+      },
+      "email": {
+        "description": "Devi usare un account diverso da quello dell'app mobile. Usa la funzione di condivisione dell'app per creare un account dedicato a Home Assistant, perché è possibile un solo accesso alla volta per ogni account.",
+        "data": {
+          "email": "Indirizzo email",
+          "password": "Password",
+          "region": "Server regionale"
+        },
+        "data_description": {
+          "region": "Lascia su automatico se non sai su quale server si trova il tuo account. La modalità automatica prova tutte le regioni una dopo l'altra, quindi una password errata viene tentata su ciascuna di esse."
+        },
+        "title": "Accedi con l'email"
+      },
+      "phone": {
+        "description": "Devi usare un account diverso da quello dell'app mobile. Usa la funzione di condivisione dell'app per creare un account dedicato a Home Assistant, perché è possibile un solo accesso alla volta per ogni account.",
+        "data": {
+          "phone": "Numero di telefono",
+          "password": "Password",
+          "region": "Server regionale"
+        },
+        "data_description": {
+          "phone": "Includi il prefisso internazionale, ad esempio +393331234567. Senza prefisso il paese viene indovinato e di solito risulta sbagliato.",
+          "region": "Lascia su automatico se non sai su quale server si trova il tuo account. La modalità automatica prova tutte le regioni una dopo l'altra, quindi una password errata viene tentata su ciascuna di esse."
+        },
+        "title": "Accedi con il numero di telefono"
+      },
+      "discovery": {
+        "description": "Trovati {total_count} dispositivi: {supported_count} completamente supportati, {unsupported_count} con supporto limitato. Seleziona i dispositivi da aggiungere. I dispositivi supportati sono già preselezionati per una configurazione rapida.",
+        "data": {
+          "device_ids": "Dispositivi rilevati",
+          "update_interval": "Intervallo di aggiornamento"
+        },
+        "title": "Rilevamento dispositivi"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Aggiungi o rimuovi dispositivi e configura l'intervallo di aggiornamento. Le modifiche hanno effetto dopo il riavvio dell'integrazione.",
+        "data": {
+          "device_ids": "Dispositivi rilevati",
+          "update_interval": "Intervallo di aggiornamento"
+        },
+        "title": "Gestisci dispositivi"
+      }
+    }
+  },
+  "selector": {
+    "region": {
+      "options": {
+        "auto": "Rilevamento automatico",
+        "global": "Globale",
+        "china": "Cina",
+        "usa": "Stati Uniti",
+        "singapore": "Singapore"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "hair_cleaning": {
+        "name": "Pulizia peli"
+      },
+      "heating": {
+        "name": "Riscaldamento"
+      },
+      "light_active": {
+        "name": "Luce"
+      },
+      "uv_active": {
+        "name": "Sterilizzazione UV"
+      }
+    },
+    "button": {
+      "feed": {
+        "name": "Eroga cibo"
+      },
+      "reset_deodorant": {
+        "name": "Ripristina deodorante"
+      },
+      "reset_litter": {
+        "name": "Ripristina lettiera"
+      }
+    },
+    "number": {
+      "portions": {
+        "name": "Porzioni"
+      }
+    },
+    "select": {
+      "action": {
+        "state": {
+          "start": "Avvia",
+          "pause": "Pausa",
+          "cleaning": "Pulisci",
+          "clean_start": "Pulizia: avvia",
+          "clean_pause": "Pulizia: pausa",
+          "clean_cancel": "Pulizia: annulla",
+          "pave_start": "Livella lettiera: avvia",
+          "pave_pause": "Livella lettiera: pausa"
+        },
+        "name": "Azione"
+      },
+      "box_full_sensitivity": {
+        "state": {
+          "level_1": "Livello 1",
+          "level_2": "Livello 2",
+          "level_3": "Livello 3",
+          "level_4": "Livello 4"
+        },
+        "name": "Sensibilità contenitore pieno"
+      },
+      "garbage": {
+        "state": {
+          "change_bag": "Cambia sacchetto",
+          "reset": "Ripristina"
+        },
+        "name": "Sacchetto rifiuti"
+      },
+      "litter_type": {
+        "state": {
+          "bentonite": "Bentonite",
+          "mixed": "Mista"
+        },
+        "name": "Tipo di lettiera"
+      },
+      "mode": {
+        "state": {
+          "auto": "Automatico",
+          "manual": "Manuale",
+          "scheduled": "Programmato",
+          "time": "Programmato",
+          "empty": "Svuotamento",
+          "flowing": "Flusso continuo",
+          "eco": "Eco",
+          "smart": "Intelligente"
+        },
+        "name": "Modalità"
+      },
+      "safe_time": {
+        "state": {
+          "min_1": "1 minuto",
+          "min_3": "3 minuti",
+          "min_5": "5 minuti",
+          "min_7": "7 minuti",
+          "min_10": "10 minuti",
+          "min_15": "15 minuti",
+          "min_30": "30 minuti"
+        },
+        "name": "Tempo di sicurezza"
+      }
+    },
+    "sensor": {
+      "age_months": {
+        "name": "Età (mesi)"
+      },
+      "age_years": {
+        "name": "Età (anni)"
+      },
+      "avatar": {
+        "name": "Avatar"
+      },
+      "birthday": {
+        "name": "Data di nascita"
+      },
+      "breed": {
+        "name": "Razza"
+      },
+      "deodorant_countdown": {
+        "name": "Giorni residui deodorante"
+      },
+      "diet_intakes": {
+        "name": "Cibo consumato"
+      },
+      "diet_times": {
+        "name": "Pasti"
+      },
+      "drink_times": {
+        "name": "Bevute"
+      },
+      "error": {
+        "name": "Errore"
+      },
+      "filter_life": {
+        "name": "Durata filtro"
+      },
+      "garbage_tobe_status": {
+        "name": "Stato contenitore rifiuti"
+      },
+      "gender_label": {
+        "state": {
+          "male": "Maschio",
+          "female": "Femmina",
+          "neutered_male": "Maschio castrato",
+          "neutered_female": "Femmina sterilizzata"
+        },
+        "name": "Sesso"
+      },
+      "humidity": {
+        "name": "Umidità"
+      },
+      "knob_status": {
+        "name": "Posizione manopola"
+      },
+      "last_log": {
+        "name": "Ultimo evento"
+      },
+      "last_sync": {
+        "name": "Ultima sincronizzazione"
+      },
+      "litter_remaining_days": {
+        "name": "Lettiera rimanente"
+      },
+      "litter_weight": {
+        "name": "Peso lettiera"
+      },
+      "manual_clean_time": {
+        "name": "Pulizie manuali"
+      },
+      "notice_config_count": {
+        "name": "Notifiche"
+      },
+      "occupied": {
+        "name": "Occupato"
+      },
+      "online": {
+        "name": "Online"
+      },
+      "pee_times": {
+        "name": "Minzioni"
+      },
+      "pet_stats_count": {
+        "name": "Animali monitorati"
+      },
+      "poo_times": {
+        "name": "Defecazioni"
+      },
+      "sport_active_duration": {
+        "name": "Tempo di attività"
+      },
+      "state": {
+        "state": {
+          "idle": "Inattivo",
+          "running": "In funzione",
+          "need_reset": "Richiede il ripristino",
+          "unknown": "Sconosciuto"
+        },
+        "name": "Stato"
+      },
+      "stats_duration_avg": {
+        "name": "Durata media"
+      },
+      "stats_times": {
+        "name": "Visite"
+      },
+      "stats_weight_avg": {
+        "name": "Peso medio"
+      },
+      "status": {
+        "name": "Stato di salute"
+      },
+      "temperature": {
+        "name": "Temperatura"
+      },
+      "toilet_times": {
+        "name": "Visite alla lettiera"
+      },
+      "toilet_weight_avg": {
+        "name": "Peso medio per visita"
+      },
+      "total_clean_time": {
+        "name": "Pulizie totali"
+      },
+      "water_level": {
+        "name": "Livello dell'acqua"
+      },
+      "weight": {
+        "name": "Peso"
+      },
+      "wifi_rssi": {
+        "name": "Segnale Wi-Fi"
+      },
+      "wifi_ssid": {
+        "name": "Rete Wi-Fi"
+      }
+    },
+    "switch": {
+      "auto_burial": {
+        "name": "Interramento automatico"
+      },
+      "auto_pet_weight_update": {
+        "name": "Aggiornamento automatico del peso"
+      },
+      "child_lock": {
+        "name": "Blocco bambini"
+      },
+      "continuous_cleaning": {
+        "name": "Pulizia continua"
+      },
+      "indicator_light": {
+        "name": "Luce indicatore"
+      },
+      "keypad_tone": {
+        "name": "Suono tastiera"
+      },
+      "kitty_model": {
+        "name": "Modalità gattino"
+      },
+      "notice_anti_pinch": {
+        "name": "Notifica: antipizzicamento attivato"
+      },
+      "notice_box_full": {
+        "name": "Notifica: contenitore pieno"
+      },
+      "notice_cat_came": {
+        "name": "Notifica: visita del gatto"
+      },
+      "notice_firmware_updated": {
+        "name": "Notifica: aggiornamento firmware"
+      },
+      "notice_litter_not_enough": {
+        "name": "Notifica: lettiera insufficiente"
+      },
+      "notice_replace_deodorant": {
+        "name": "Notifica: sostituire il deodorante"
+      },
+      "notice_replace_garbage_bag": {
+        "name": "Notifica: sostituire il sacchetto"
+      },
+      "notice_sandbox_not_enough": {
+        "name": "Notifica: capacità lettiera insufficiente"
+      },
+      "notice_wash_scooper": {
+        "name": "Notifica: pulire la lettiera"
+      },
+      "quiet_mode": {
+        "name": "Modalità silenziosa"
+      }
+    }
+  }
+}

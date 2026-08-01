@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from homeassistant.const import CONF_DEVICES, CONF_PASSWORD, CONF_TOKEN
+from homeassistant.const import CONF_DEVICES, CONF_EMAIL, CONF_PASSWORD, CONF_TOKEN
 
 from custom_components.catlink.const import (
     CONF_API_BASE,
@@ -16,6 +16,8 @@ from custom_components.catlink.const import (
     CONF_UPDATE_INTERVAL,
     DEFAULT_API_BASE,
     DOMAIN,
+    LOGIN_API_EMAIL,
+    LOGIN_API_PHONE,
     SCAN_INTERVAL,
 )
 from custom_components.catlink.modules.account import Account
@@ -286,6 +288,74 @@ class TestAccountAsyncLogin:
 
             assert result is False
             assert account.token == ""
+
+    @pytest.mark.usefixtures("enable_custom_integrations")
+    async def test_login_by_phone_uses_phone_endpoint(self, account) -> None:
+        """Test a phone account posts mobile + internationalCode."""
+        with (
+            patch.object(account, "request", new_callable=AsyncMock) as mock_request,
+            patch.object(account, "async_check_auth", new_callable=AsyncMock),
+        ):
+            mock_request.return_value = {"data": {"token": "tok"}}
+            await account.async_login()
+
+            api, pms, method = mock_request.call_args[0]
+            assert api == LOGIN_API_PHONE
+            assert method == "POST"
+            assert pms["mobile"] == "13812345678"
+            assert pms["internationalCode"] == "86"
+            assert "email" not in pms
+
+    @pytest.mark.usefixtures("enable_custom_integrations")
+    async def test_login_by_email_uses_email_endpoint(
+        self, hass, mock_http_session
+    ) -> None:
+        """Test an email account posts to login/email with the address."""
+        acc = Account(
+            hass, {CONF_EMAIL: "user@example.com", CONF_PASSWORD: "testpass"}
+        )
+        with (
+            patch.object(acc, "request", new_callable=AsyncMock) as mock_request,
+            patch.object(acc, "async_check_auth", new_callable=AsyncMock),
+        ):
+            mock_request.return_value = {"data": {"token": "tok"}}
+            result = await acc.async_login()
+
+            assert result is True
+            api, pms, method = mock_request.call_args[0]
+            assert api == LOGIN_API_EMAIL
+            assert method == "POST"
+            assert pms["email"] == "user@example.com"
+            assert pms["platform"] == "ANDROID"
+            assert "mobile" not in pms
+            assert "internationalCode" not in pms
+
+
+class TestAccountIdentity:
+    """Tests for how an account identifies itself by email or phone."""
+
+    @pytest.fixture
+    def email_account(self, hass, mock_http_session):
+        """Create an email-based Account."""
+        return Account(
+            hass, {CONF_EMAIL: "user@example.com", CONF_PASSWORD: "testpass"}
+        )
+
+    def test_email_account_properties(self, email_account) -> None:
+        """Test an email account exposes its address and derived uid."""
+        assert email_account.email == "user@example.com"
+        assert email_account.uid == "email-user@example.com"
+        assert email_account.identifier == "user@example.com"
+
+    def test_phone_account_properties(self, account) -> None:
+        """Test a phone account reports no email and keeps its legacy uid."""
+        assert account.email == ""
+        assert account.uid == "86-13812345678"
+        assert account.identifier == "+8613812345678"
+
+    def test_phone_uid_format_is_unchanged(self, account) -> None:
+        """Test the phone uid keeps its old shape so entries keep matching."""
+        assert account.uid == f"{account._config[CONF_PHONE_IAC]}-{account.phone}"
 
 
 class TestAccountGetDevices:

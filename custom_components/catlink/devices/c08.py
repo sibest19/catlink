@@ -109,21 +109,21 @@ class C08Device(LitterDevice):
     def litter_types(self) -> dict:
         """Return the litter types."""
         return {
-            "00": "Bentonite",
-            "02": "Mixed",
+            "00": "bentonite",
+            "02": "mixed",
         }
 
     @property
     def safe_time_options(self) -> dict:
         """Return safe time options."""
         return {
-            "1": "1 min",
-            "3": "3 min",
-            "5": "5 min",
-            "7": "7 min",
-            "10": "10 min",
-            "15": "15 min",
-            "30": "30 min",
+            "1": "min_1",
+            "3": "min_3",
+            "5": "min_5",
+            "7": "min_7",
+            "10": "min_10",
+            "15": "min_15",
+            "30": "min_30",
         }
 
     @property
@@ -336,10 +336,9 @@ class C08Device(LitterDevice):
                 "async_turn_off": partial(self.async_set_kitty_model, False),
             },
         }
-        for slug, (item_code, label) in NOTICE_ITEMS.items():
+        for slug, (item_code, _label) in NOTICE_ITEMS.items():
             switches[f"notice_{slug}"] = {
                 "icon": "mdi:bell",
-                "name": f"Notice: {label}",
                 "async_turn_on": partial(self.async_set_notice, item_code, True),
                 "async_turn_off": partial(self.async_set_notice, item_code, False),
             }
@@ -665,11 +664,11 @@ class C08Device(LitterDevice):
     def _action_options(self) -> dict[str, tuple[str, str]]:
         """Return C08 action options mapping."""
         return {
-            "Clean: start": ("RUN", "CLEAN"),
-            "Clean: pause": ("PAUSE", "CLEAN"),
-            "Clean: cancel": ("CANCEL", "CLEAN"),
-            "Pave: start": ("RUN", "PAVE"),
-            "Pave: pause": ("PAUSE", "PAVE"),
+            "clean_start": ("RUN", "CLEAN"),
+            "clean_pause": ("PAUSE", "CLEAN"),
+            "clean_cancel": ("CANCEL", "CLEAN"),
+            "pave_start": ("RUN", "PAVE"),
+            "pave_pause": ("PAUSE", "PAVE"),
         }
 
     def _quiet_time_range(self) -> tuple[time, time]:

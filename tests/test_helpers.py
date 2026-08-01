@@ -9,6 +9,7 @@ from custom_components.catlink.const import DOMAIN
 from custom_components.catlink.helpers import (
     Helper,
     async_setup_domain_platform,
+    as_int,
     discover_region,
     format_api_error,
     parse_phone_number,
@@ -110,6 +111,14 @@ class TestCalculateUpdateInterval:
         assert Helper.calculate_update_interval(-10) == timedelta(minutes=1)
 
 
+PHONE_CREDENTIALS = {
+    "phone": "13812345678",
+    "phone_iac": "86",
+    "password": "testpass",
+}
+EMAIL_CREDENTIALS = {"email": "user@example.com", "password": "testpass"}
+
+
 class TestDiscoverRegion:
     """Tests for discover_region."""
 
@@ -123,7 +132,7 @@ class TestDiscoverRegion:
             mock_account.async_login = AsyncMock(return_value=True)
             mock_account_cls.return_value = mock_account
 
-            result = await discover_region(hass, "86", "13812345678", "testpass")
+            result = await discover_region(hass, PHONE_CREDENTIALS)
 
             assert result == "global"
             mock_account.async_login.assert_called_once()
@@ -138,9 +147,56 @@ class TestDiscoverRegion:
             mock_account.async_login = AsyncMock(return_value=False)
             mock_account_cls.return_value = mock_account
 
-            result = await discover_region(hass, "86", "13812345678", "wrongpass")
+            result = await discover_region(hass, PHONE_CREDENTIALS)
 
             assert result is None
+
+    @pytest.mark.usefixtures("enable_custom_integrations")
+    async def test_discover_region_accepts_email_credentials(self, hass) -> None:
+        """Test discover_region passes email credentials through to the account."""
+        with patch(
+            "custom_components.catlink.modules.account.Account"
+        ) as mock_account_cls:
+            mock_account = MagicMock()
+            mock_account.async_login = AsyncMock(return_value=True)
+            mock_account_cls.return_value = mock_account
+
+            result = await discover_region(hass, EMAIL_CREDENTIALS)
+
+            assert result == "global"
+            config = mock_account_cls.call_args[0][1]
+            assert config["email"] == "user@example.com"
+            assert config["api_base"] == "https://app.catlinks.cn/api/"
+
+    @pytest.mark.usefixtures("enable_custom_integrations")
+    async def test_explicit_region_tries_only_that_region(self, hass) -> None:
+        """Test an explicit region does not fall back to probing every server."""
+        with patch(
+            "custom_components.catlink.modules.account.Account"
+        ) as mock_account_cls:
+            mock_account = MagicMock()
+            mock_account.async_login = AsyncMock(return_value=False)
+            mock_account_cls.return_value = mock_account
+
+            result = await discover_region(hass, PHONE_CREDENTIALS, region="usa")
+
+            assert result is None
+            assert mock_account.async_login.await_count == 1
+            config = mock_account_cls.call_args[0][1]
+            assert config["api_base"] == "https://app-usa.catlinks.cn/api/"
+
+    @pytest.mark.usefixtures("enable_custom_integrations")
+    async def test_auto_region_probes_every_server(self, hass) -> None:
+        """Test auto-detect tries all four regions before giving up."""
+        with patch(
+            "custom_components.catlink.modules.account.Account"
+        ) as mock_account_cls:
+            mock_account = MagicMock()
+            mock_account.async_login = AsyncMock(return_value=False)
+            mock_account_cls.return_value = mock_account
+
+            assert await discover_region(hass, PHONE_CREDENTIALS) is None
+            assert mock_account.async_login.await_count == 4
 
 
 class TestAsyncSetupDomainPlatform:
@@ -187,3 +243,28 @@ class TestAsyncSetupDomainPlatform:
             )
 
             extra_setup.assert_called_once()
+
+
+class TestAsInt:
+    """Tests for as_int."""
+
+    def test_plain_values(self) -> None:
+        """Test ints and numeric strings coerce."""
+        assert as_int(5) == 5
+        assert as_int("0") == 0
+        assert as_int("42") == 42
+
+    def test_none_returns_default(self) -> None:
+        """Test a JSON null becomes the default, not a crash.
+
+        The API sends the key with a null value, so dict.get(key, 0) hands back
+        None and int(None) raises.
+        """
+        assert as_int(None) is None
+        assert as_int(None, 0) == 0
+
+    def test_empty_and_junk_return_default(self) -> None:
+        """Test unparseable values fall back instead of raising."""
+        assert as_int("") is None
+        assert as_int("abc", 0) == 0
+        assert as_int([], 7) == 7

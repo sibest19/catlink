@@ -169,6 +169,38 @@ class TestDevicesCoordinatorAsyncUpdateData:
             assert mock_create.call_count == 1
 
     @pytest.mark.usefixtures("enable_custom_integrations")
+    async def test_empty_device_ids_does_not_filter(
+        self, mock_account, coordinator_hass_data
+    ) -> None:
+        """Test an empty selection includes devices shared after setup.
+
+        Setup stores an empty list when the account had no devices yet; that
+        must not permanently hide devices that show up later.
+        """
+        coordinator = DevicesCoordinator(
+            mock_account,
+            config_entry_id="entry-1",
+            device_ids=[],
+        )
+
+        mock_account.get_devices = AsyncMock(
+            return_value=[{"id": "5850318", "deviceType": "C08"}]
+        )
+
+        with patch(
+            "custom_components.catlink.modules.devices_coordinator.create_device"
+        ) as mock_create:
+            mock_device = MagicMock()
+            mock_device.id = "5850318"
+            mock_device.async_init = AsyncMock()
+            mock_create.return_value = mock_device
+
+            result = await coordinator._async_update_data()
+
+            assert "5850318" in result
+            assert mock_create.call_count == 1
+
+    @pytest.mark.usefixtures("enable_custom_integrations")
     async def test_update_data_skips_device_without_id(
         self, coordinator, mock_account, coordinator_hass_data
     ) -> None:

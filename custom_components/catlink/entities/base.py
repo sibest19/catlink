@@ -14,6 +14,12 @@ from ..devices.base import Device
 class CatlinkEntity(CoordinatorEntity):
     """CatlinkEntity."""
 
+    # Platform domain of the concrete subclass. It has to match the platform the
+    # entity is added to: Home Assistant warns about a mismatched entity_id
+    # domain and stops accepting it in 2027.5. Subclasses that leave this None
+    # let Home Assistant generate the entity_id itself.
+    _entity_domain: str | None = None
+
     def __init__(self, name, device: Device, option=None) -> None:
         """Initialize the entity."""
         self.coordinator = device.coordinator
@@ -22,13 +28,24 @@ class CatlinkEntity(CoordinatorEntity):
         self._name = name
         self._device = device
         self._option = option or {}
-        display_name = self._option.get("name", name)
-        self._attr_name = f"{device.name} {display_name}".strip()
+        # has_entity_name lets Home Assistant compose "<device> <entity>" itself
+        # and take the entity half from entity.<domain>.<key>.name in the
+        # translations.
+        #
+        # _attr_name is deliberately never set: Entity._name_internal returns it
+        # immediately if the attribute exists, short-circuiting the translation
+        # lookup. Every entity key must therefore have a name in the translation
+        # files - test_every_entity_key_is_translated enforces that.
+        self._attr_has_entity_name = True
         self._attr_device_id = f"{device.type}_{device.mac}"
         self._attr_unique_id = f"{self._attr_device_id}-{name}"
-        mac = device.mac[-4:] if device.mac else device.id
-        object_id = f"{device.type}_{mac}_{name}"
-        self.entity_id = f"{DOMAIN}.{slugify(object_id)}"
+        if self._entity_domain:
+            mac = device.mac[-4:] if device.mac else device.id
+            object_id = f"{device.type}_{mac}_{name}"
+            self.entity_id = f"{self._entity_domain}.{slugify(object_id)}"
+        # The entity key doubles as the translation key, so state translations
+        # live under entity.<domain>.<key>.state.<value> in strings.json.
+        self._attr_translation_key = self._option.get("translation_key", slugify(name))
         self._attr_icon = self._option.get("icon")
         self._attr_device_class = self._option.get("class")
         self._attr_native_unit_of_measurement = self._option.get("unit")

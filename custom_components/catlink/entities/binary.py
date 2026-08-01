@@ -31,3 +31,5 @@ class CatlinkBinaryEntity(CatlinkEntity):
 
 class CatlinkBinarySensorEntity(CatlinkBinaryEntity, BinarySensorEntity):
     """Binary sensor entity for CatLink."""
+
+    _entity_domain = "binary_sensor"

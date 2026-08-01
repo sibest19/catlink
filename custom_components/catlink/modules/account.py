@@ -11,7 +11,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 
-from homeassistant.const import CONF_DEVICES, CONF_PASSWORD, CONF_TOKEN
+from homeassistant.const import CONF_DEVICES, CONF_EMAIL, CONF_PASSWORD, CONF_TOKEN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import aiohttp_client
 from homeassistant.helpers.storage import Store
@@ -26,6 +26,8 @@ from ..const import (
     CONF_UPDATE_INTERVAL,
     DEFAULT_API_BASE,
     DOMAIN,
+    LOGIN_API_EMAIL,
+    LOGIN_API_PHONE,
     RSA_PUBLIC_KEY,
     SCAN_INTERVAL,
     SIGN_KEY,
@@ -57,6 +59,18 @@ class Account:
         return self._config.get(CONF_PHONE)
 
     @property
+    def email(self) -> str:
+        """Return the email of the account, empty when signing in by phone."""
+        return self._config.get(CONF_EMAIL) or ""
+
+    @property
+    def identifier(self) -> str:
+        """Return a human-readable account identifier, for log messages."""
+        if self.email:
+            return self.email
+        return f"+{self._config.get(CONF_PHONE_IAC)}{self.phone}"
+
+    @property
     def password(self) -> str:
         """Return the password of the account."""
         pwd = self._config.get(CONF_PASSWORD)
@@ -66,7 +80,13 @@ class Account:
 
     @property
     def uid(self):
-        """Return the unique id of the account."""
+        """Return the unique id of the account.
+
+        The phone form is unchanged so existing config entries keep matching
+        their unique_id across upgrades.
+        """
+        if self.email:
+            return f"email-{self.email}"
         return f"{self._config.get(CONF_PHONE_IAC)}-{self.phone}"
 
     @property
@@ -126,7 +146,9 @@ class Account:
             
             # Handle token expiration (1002: Illegal token)
             if result.get("returnCode") == 1002 and not kwargs.get("_retried"):
-                _LOGGER.info("Token expired (1002), attempting re-login for %s", self.phone)
+                _LOGGER.info(
+                    "Token expired (1002), attempting re-login for %s", self.identifier
+                )
                 if await self.async_login():
                     kwargs["_retried"] = True
                     return await self.request(api, pms, method, **kwargs)
@@ -137,22 +159,32 @@ class Account:
         return {}
 
     async def async_login(self) -> bool:
-        """Login the account."""
-        pms = {
-            "platform": "ANDROID",
-            "internationalCode": self._config.get(CONF_PHONE_IAC),
-            "mobile": str(self.phone),
-            "password": self.password,
-        }
+        """Login the account, by email or by phone depending on the config."""
+        if self.email:
+            api = LOGIN_API_EMAIL
+            pms = {
+                "platform": "ANDROID",
+                "email": self.email,
+                "password": self.password,
+            }
+        else:
+            api = LOGIN_API_PHONE
+            pms = {
+                "platform": "ANDROID",
+                "internationalCode": self._config.get(CONF_PHONE_IAC),
+                "mobile": str(self.phone),
+                "password": self.password,
+            }
         self._config.update(
             {
                 CONF_TOKEN: None,
             }
         )
-        rsp = await self.request("login/password", pms, "POST")
+        rsp = await self.request(api, pms, "POST")
         tok = rsp.get("data", {}).get("token")
         if not tok:
-            _LOGGER.error("Login %s failed: %s", self.phone, [rsp, pms])
+            # Never log pms here: it carries the encrypted password.
+            _LOGGER.error("Login %s failed: %s", self.identifier, rsp)
             return False
         self._config.update(
             {
@@ -201,7 +233,7 @@ class Account:
                 rsp = await self.request(api, {"type": "NONE"})
         dls = rsp.get("data", {}).get(CONF_DEVICES) or []
         if not dls:
-            _LOGGER.warning("Got devices for %s failed: %s", self.phone, rsp)
+            _LOGGER.warning("Got devices for %s failed: %s", self.identifier, rsp)
         return dls
 
     async def get_cats(self, timezone_id: str | None = None) -> list:
@@ -220,7 +252,7 @@ class Account:
                 rsp = await self.request(api, params)
         cats = rsp.get("data", {}).get("cats") or []
         if not cats:
-            _LOGGER.warning("Got cats for %s failed: %s", self.phone, rsp)
+            _LOGGER.warning("Got cats for %s failed: %s", self.identifier, rsp)
         return cats
 
     async def get_cat_summary_simple(

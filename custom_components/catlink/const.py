@@ -5,7 +5,7 @@ import logging
 
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-from homeassistant.const import CONF_PASSWORD, CONF_SCAN_INTERVAL
+from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, CONF_SCAN_INTERVAL
 
 DOMAIN = "catlink"
 _LOGGER = logging.getLogger(__name__)
@@ -26,9 +26,24 @@ CONF_DEVICE_IDS = "device_ids"
 CONF_UPDATE_INTERVAL = "update_interval"
 
 DEFAULT_API_BASE = "https://app.catlinks.cn/api/"
+DEFAULT_UPDATE_INTERVAL = 60
+
+# Login endpoints. The account can be identified either by email address or by
+# phone number; both take the same RSA-encrypted password and the same request
+# signature, they only differ in the identity fields they expect.
+LOGIN_API_EMAIL = "login/email"
+LOGIN_API_PHONE = "login/password"
 
 # Device types with full support (sensors, switches, selects, etc.)
-SUPPORTED_DEVICE_TYPES = frozenset({"C08", "SCOOPER", "LITTER_BOX_599", "FEEDER", "PUREPRO"})
+# Must stay in sync with DEVICE_TYPES in devices/registry.py: a device with a
+# class there but missing here is labelled "Limited support" in the config flow
+# and is not pre-selected, so it silently never gets added.
+SUPPORTED_DEVICE_TYPES = frozenset(
+    {"C08", "SCOOPER", "LITTER_BOX_599", "FEEDER", "PUREPRO", "VISUAL_PRO_ULTRA"}
+)
+
+# Sentinel for "try every region until one accepts the credentials".
+REGION_AUTO = "auto"
 
 # API server regions: value is the API base URL
 API_SERVERS: dict[str, str] = {

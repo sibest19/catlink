@@ -1,0 +1,26 @@
+# Home Assistant configuration for local CatLink development.
+#
+# The integration itself is bind-mounted at /config/custom_components/catlink
+# by docker-compose.yml. Add it from Settings > Devices & Services > Add
+# Integration > CatLink — it is config-flow only and takes no YAML.
+
+default_config:
+
+logger:
+  default: warning
+  logs:
+    custom_components.catlink: debug
+    # Requirement installation is silent above INFO. Without these, a manifest
+    # dependency that fails to install surfaces only as "Invalid handler
+    # specified" in the UI, with nothing in the log to explain it.
+    homeassistant.requirements: info
+    homeassistant.util.package: info
+    homeassistant.setup: info
+
+# Remote debugger, reachable on port 5678. Attach from VS Code using the
+# "Attach to Home Assistant (Docker)" launch configuration.
+#   start: true   -> open the debug port on startup
+#   wait:  false  -> do not block startup waiting for a debugger to attach
+debugpy:
+  start: true
+  wait: false

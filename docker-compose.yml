@@ -1,0 +1,42 @@
+# Local Home Assistant instance for developing and debugging the CatLink
+# integration.
+#
+#   docker compose up -d                 start (first boot takes a minute)
+#   open http://localhost:8123           onboard with a throwaway account
+#   docker compose logs -f               follow logs (catlink logs at DEBUG)
+#   docker compose restart               reload after editing Python
+#   docker compose down -v               stop and keep the HA config
+#
+# The integration is bind-mounted straight from the working tree, so edits are
+# visible inside the container immediately. Home Assistant imports the Python
+# modules once at startup though, so a restart is required for code changes to
+# actually take effect.
+#
+# On first start Home Assistant installs the manifest requirements
+# (phonenumbers, pydantic) into ./dev/ha-config/deps — that step needs network
+# access and only happens once.
+
+name: catlink-dev
+
+services:
+  homeassistant:
+    container_name: catlink-ha-dev
+    # Thin layer over the official image that pre-installs the manifest
+    # requirements — see dev/Dockerfile for why.
+    build:
+      context: .
+      dockerfile: dev/Dockerfile
+      args:
+        HA_VERSION: ${HA_VERSION:-stable}
+    image: catlink-ha-dev:${HA_VERSION:-stable}
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Europe/Rome}
+    ports:
+      - "8123:8123" # Home Assistant UI
+      - "5678:5678" # debugpy remote debugger
+    volumes:
+      # Persistent Home Assistant config, so onboarding survives a restart.
+      - ./dev/ha-config:/config
+      # The integration under development, live from the working tree.
+      - ./custom_components/catlink:/config/custom_components/catlink

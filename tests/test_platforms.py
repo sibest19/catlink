@@ -90,8 +90,14 @@ async def init_integration(
 async def test_platforms_loaded(init_integration: MockConfigEntry) -> None:
     """Test all supported platforms are loaded."""
     assert init_integration.state is ConfigEntryState.LOADED
-    for domain in SUPPORTED_DOMAINS:
-        assert domain in ["sensor", "binary_sensor", "switch", "select", "button"]
+    assert set(SUPPORTED_DOMAINS) == {
+        "sensor",
+        "binary_sensor",
+        "switch",
+        "select",
+        "button",
+        "number",
+    }
 
 
 @pytest.mark.usefixtures("enable_custom_integrations")
@@ -170,3 +176,82 @@ async def test_all_platforms_have_setup_entry(
     ]:
         assert hasattr(module, "async_setup_entry")
         assert callable(module.async_setup_entry)
+
+
+@pytest.mark.usefixtures("enable_custom_integrations")
+async def test_entity_names_and_states_are_translated(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Test names and enum states resolve through the translation files.
+
+    Guards the whole has_entity_name + translation_key chain: a typo in the
+    key path silently falls back to the raw slug, which is easy to miss.
+    """
+    from homeassistant.helpers import translation
+
+    res = await translation.async_get_translations(hass, "en", "entity", {DOMAIN})
+
+    # Entity names: <key> -> the label shown next to the device name.
+    assert res["component.catlink.entity.sensor.gender_label.name"] == "Gender"
+    assert res["component.catlink.entity.sensor.wifi_rssi.name"] == "Wi-Fi signal"
+    assert res["component.catlink.entity.select.litter_type.name"] == "Litter type"
+    assert res["component.catlink.entity.switch.quiet_mode.name"] == "Quiet mode"
+
+    # Enum states: the slugs the device classes emit.
+    assert res["component.catlink.entity.sensor.state.state.idle"] == "Idle"
+    assert (
+        res["component.catlink.entity.select.litter_type.state.bentonite"]
+        == "Bentonite"
+    )
+    assert res["component.catlink.entity.select.safe_time.state.min_5"] == "5 minutes"
+
+
+def test_every_entity_key_is_translated() -> None:
+    """Test every entity key and enum state has a name in every language.
+
+    _attr_name is never set (it would short-circuit the translation lookup in
+    Entity._name_internal), so a key missing from the translation files ends up
+    with no name at all in the UI. This walks every device class and fails loudly
+    instead.
+    """
+    import json
+    from pathlib import Path
+    from unittest.mock import MagicMock
+
+    from custom_components.catlink.devices.registry import DEVICE_TYPES
+
+    hass_attrs = {
+        "sensor": "hass_sensor",
+        "binary_sensor": "hass_binary_sensor",
+        "switch": "hass_switch",
+        "select": "hass_select",
+        "button": "hass_button",
+        "number": "hass_number",
+    }
+
+    keys: dict[str, set[str]] = {domain: set() for domain in hass_attrs}
+    for dtype, cls in DEVICE_TYPES.items():
+        device = cls(
+            {"id": "1", "deviceType": dtype, "mac": "AA", "deviceName": "x"},
+            MagicMock(),
+            None,
+        )
+        device.detail = {}
+        for domain, attr in hass_attrs.items():
+            keys[domain] |= set(getattr(device, attr, None) or {})
+
+    assert sum(len(v) for v in keys.values()) > 50, "device walk found nothing"
+
+    base = Path(__file__).parent.parent / "custom_components/catlink/translations"
+    for path in sorted(base.glob("*.json")):
+        entity = json.loads(path.read_text())["entity"]
+        for domain, domain_keys in keys.items():
+            translated = {k for k, v in entity.get(domain, {}).items() if "name" in v}
+            assert not domain_keys - translated, (
+                f"{path.name}: {domain} keys without a name: "
+                f"{sorted(domain_keys - translated)}"
+            )
+            assert not translated - domain_keys, (
+                f"{path.name}: {domain} names for keys no device creates: "
+                f"{sorted(translated - domain_keys)}"
+            )

@@ -1,0 +1,5 @@
+# Home Assistant writes its database, .storage, logs and installed deps into
+# this directory at runtime. Keep only the checked-in dev configuration.
+*
+!.gitignore
+!configuration.yaml

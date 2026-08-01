@@ -4,6 +4,7 @@ from collections import deque
 from typing import TYPE_CHECKING
 
 from ..const import _LOGGER
+from ..helpers import as_int
 from ..models.additional_cfg import AdditionalDeviceConfig
 from .base import Device
 from .mixins.logs import LogsMixin
@@ -76,39 +77,19 @@ class LitterDevice(LogsMixin, Device):
     @property
     def total_clean_time(self) -> int:
         """Return the total clean time."""
-        try:
-            return int(self.detail.get("inductionTimes", 0)) + int(
-                self.detail.get("manualTimes", 0)
-            )
-        except Exception as exc:
-            _LOGGER.error("Get total clean time failed: %s", exc)
-            return 0
+        return as_int(self.detail.get("inductionTimes"), 0) + as_int(
+            self.detail.get("manualTimes"), 0
+        )
 
     @property
     def manual_clean_time(self) -> int:
         """Return the manual clean time."""
-        try:
-            raw = self.detail.get("manualTimes", 0)
-            result = int(raw)
-            if result == 0:
-                _LOGGER.debug(
-                    "manual_clean_time is 0: manualTimes=%r (detail keys: %s)",
-                    raw,
-                    list(self.detail.keys()) if self.detail else "none",
-                )
-            return result
-        except Exception as exc:
-            _LOGGER.error("Get manual clean time failed: %s", exc)
-            return 0
+        return as_int(self.detail.get("manualTimes"), 0)
 
     @property
-    def deodorant_countdown(self) -> int:
-        """Return the deodorant countdown."""
-        try:
-            return int(self.detail.get("deodorantCountdown", 0))
-        except Exception as exc:
-            _LOGGER.error("Get deodorant countdown failed: %s", exc)
-            return 0
+    def deodorant_countdown(self) -> int | None:
+        """Return the deodorant countdown, or None when the device omits it."""
+        return as_int(self.detail.get("deodorantCountdown"))
 
     @property
     def occupied(self) -> bool:
@@ -144,8 +125,7 @@ class LitterDevice(LogsMixin, Device):
             "alarm_status": self.detail.get("alarmStatus"),
             "weight": self.detail.get("weight"),
             "litter_weight_kg": self.detail.get("catLitterWeight"),
-            "total_clean_times": int(self.detail.get("inductionTimes", 0))
-            + int(self.detail.get("manualTimes", 0)),
+            "total_clean_times": self.total_clean_time,
             "manual_clean_times": self.detail.get("manualTimes"),
             "key_lock": self.detail.get("keyLock"),
             "safe_time": self.detail.get("safeTime"),

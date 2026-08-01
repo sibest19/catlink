@@ -187,7 +187,6 @@ class FeederDevice(LogsMixin, Device):
         """Return the device numbers."""
         return {
             "portions": {
-                "name": "Portions",
                 "icon": "mdi:counter",
                 "min": 1,
                 "max": 10,
